@@ -91,8 +91,8 @@ light:
   [below](#light-presets) for detailed information.
 * **on_brightness** (*Optional*, Action): An automation to perform when the brightness of the light
   is modified.
-* **hardware_variant** (*Optional*, string): Which colour model to use for RGB and white light.
-  One of `auto` (default), `default`, `hongli` or `legacy`. See
+* **hardware_variant** (*Optional*, `0` or `1`): The hardware variant of the lamp, which selects the
+  colour calibration. `0` (or `default`) or `1` (or `hongli`). Defaults to `0`. See
   [Hardware variant](#hardware-variant). With the standard packages, set the `hardware_variant`
   substitution instead.
 * All other options from
@@ -128,24 +128,27 @@ from the hardware: the variant is a setting called `sub_model` that is stored in
 
 | `hardware_variant` | Meaning |
 |---|---|
-| `default` (or `sub_model_0`) | Stock firmware colour model for `sub_model` 0 |
-| `hongli` (or `sub_model_1`) | Stock firmware colour model for `sub_model` 1 |
-| `auto` | Read `sub_model` from leftover stock firmware data in flash; falls back to `default` |
-| `legacy` | The measured tables that this component used before (matches `default` closely) |
+| `0` or `default` | Original firmware colours for `sub_model` 0 (the default) |
+| `1` or `hongli` | Original firmware colours for `sub_model` 1 |
 
-Both models are a re-implementation of the original firmware's colour mixing code. The firmware
-converts RGB to CIE xy and solves for the LED mix with a per-variant matrix, uses a per-variant
-colour temperature table, and compensates for the LED turn-on threshold.
+With the standard packages, set it as a substitution:
+
+```yaml
+substitutions:
+  hardware_variant: "1"
+```
+
+Both are a re-implementation of the original firmware's colour mixing code. The firmware converts
+RGB to CIE xy and solves for the LED mix with a per-variant matrix, uses a per-variant colour
+temperature table, and compensates for the LED turn-on threshold.
 
 **Finding your variant**
 
 * If you made a backup of the original firmware before flashing, run
   `python3 tools/read_sub_model.py original-firmware.bin`.
-* Otherwise, try `auto`. The original data may still be present in flash, but ESPHome's own NVS
-  storage overlaps that area, so it might already be gone. The log shows the outcome at boot
-  (`Found stock firmware sub_model=...` or a warning that it fell back to `default`).
-* If neither works: set a warm white (e.g. 2000 K) and compare `default` and `hongli`. On a lamp
-  that needs `hongli`, `default` looks greenish / too cool and yellow looks yellow-green.
+* Otherwise, set a warm white (e.g. 2000 K at full brightness) and compare `0` and `1`. With the
+  wrong variant, warm white looks greenish / too cool, and yellow looks yellow-green (or the other
+  way around: too red).
 
 ### Night light calibration
 

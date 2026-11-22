@@ -20,7 +20,7 @@ class XiaomiBslamp2LightTransitionTransformer : public light::LightTransitionTra
     CallbackManager<void(std::string)> *light_mode_callback,
     CallbackManager<void(light::LightColorValues)> *state_callback,
     NightLightCalibration night_light_calibration,
-    const ColorModel *color_model = nullptr) :
+    const ColorModel *color_model = &COLOR_MODEL_DEFAULT) :
       light_(light),
       light_mode_callback_(light_mode_callback),
       state_callback_(state_callback),
@@ -105,7 +105,7 @@ class XiaomiBslamp2LightTransitionTransformer : public light::LightTransitionTra
   CallbackManager<void(std::string)> *light_mode_callback_;
   CallbackManager<void(light::LightColorValues)> *state_callback_;
   NightLightCalibration night_light_calibration_;
-  const ColorModel *color_model_{nullptr};
+  const ColorModel *color_model_{&COLOR_MODEL_DEFAULT};
 };
 
 }  // namespace bslamp2

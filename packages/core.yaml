@@ -12,8 +12,8 @@ substitutions:
   night_light_green: "0.968"
   night_light_blue: "0.972"
   default_transition_length: 800ms
-  # Colour model: auto | default | hongli | legacy (see doc/configuration.md)
-  hardware_variant: auto
+  # Hardware variant: 0 (default) or 1 (hongli). See doc/configuration.md
+  hardware_variant: "0"
 
   # Substitutions that are primarily useful for developers, to point ESPHome
   # at a local copy of the component sources, and to change the log level

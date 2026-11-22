@@ -25,7 +25,6 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <cstring>
 #include <algorithm>
 
 namespace esphome {
@@ -33,16 +32,12 @@ namespace xiaomi {
 namespace bslamp2 {
 
 enum class HardwareVariant : int {
-  LEGACY = -2,   // the pre-existing measured tables of this component
-  AUTO = -1,     // try to read sub_model from leftover stock firmware data
-  DEFAULT = 0,   // sub_model 0
-  HONGLI = 1,    // sub_model 1
+  DEFAULT = 0,  // sub_model 0
+  HONGLI = 1,   // sub_model 1
 };
 
 inline const char *hardware_variant_to_str(HardwareVariant v) {
   switch (v) {
-    case HardwareVariant::LEGACY: return "legacy (measured tables)";
-    case HardwareVariant::AUTO: return "auto";
     case HardwareVariant::DEFAULT: return "default (sub_model 0)";
     case HardwareVariant::HONGLI: return "hongli (sub_model 1)";
   }
@@ -138,11 +133,7 @@ static const ColorModel COLOR_MODEL_HONGLI = {
 // clang-format on
 
 inline const ColorModel *color_model_for(HardwareVariant v) {
-  switch (v) {
-    case HardwareVariant::DEFAULT: return &COLOR_MODEL_DEFAULT;
-    case HardwareVariant::HONGLI: return &COLOR_MODEL_HONGLI;
-    default: return nullptr;
-  }
+  return v == HardwareVariant::HONGLI ? &COLOR_MODEL_HONGLI : &COLOR_MODEL_DEFAULT;
 }
 
 struct RGBWDuty {
@@ -300,45 +291,6 @@ inline RGBWDuty color_model_ct(const ColorModel &m, float mired, float brightnes
     quantise(apply_offset(e->b / 100.0f * bf, m.offset[2])),
     quantise(apply_offset(e->w / 100.0f * bf, m.offset[3])),
   };
-}
-
-/**
- * Parse the stock firmware's "minvs" key/value store for app_data.sub_model.
- * Record layout: 55 AA | flags(2, FFFF = current) | crc(4) | value_len(2) |
- * id(2) | key_len(1) | FF FF FF | key | value.
- * Returns the sub_model value, or -1 when not found.
- */
-inline int parse_stock_sub_model(const uint8_t *data, size_t len) {
-  static const char KEY[] = "app_data.sub_model";
-  const size_t klen = sizeof(KEY) - 1;
-  int found = -1;
-  bool found_current = false;
-  for (size_t i = 16; i + klen + 1 <= len; i++) {
-    if (memcmp(data + i, KEY, klen) != 0)
-      continue;
-    const uint8_t *h = data + i - 16;
-    if (h[0] != 0x55 || h[1] != 0xAA || h[12] != klen)
-      continue;
-    const uint16_t vlen = h[8] | (h[9] << 8);
-    if (vlen < 1 || vlen > 3 || i + klen + vlen > len)
-      continue;
-    int v = 0;
-    bool ok = true;
-    for (uint16_t j = 0; j < vlen; j++) {
-      const uint8_t c = data[i + klen + j];
-      if (c < '0' || c > '9') { ok = false; break; }
-      v = v * 10 + (c - '0');
-    }
-    if (!ok)
-      continue;
-    const bool current = h[2] == 0xFF && h[3] == 0xFF;
-    // Prefer the last record that is still marked current.
-    if (current || !found_current) {
-      found = v;
-      found_current = current;
-    }
-  }
-  return found;
 }
 
 }  // namespace bslamp2

@@ -33,18 +33,21 @@ CONF_GROUP = "group"
 CONF_NIGHT_CALIBRATION = "night_calibration"
 CONF_HARDWARE_VARIANT = "hardware_variant"
 
-# Colour model selection. "default" and "hongli" are the two hardware variants
-# known by the stock firmware (its "sub_model" setting 0 and 1). "legacy" keeps
-# the measured tables of this component. "auto" reads the stock sub_model from
-# leftover data in flash, falling back to "default".
+# Hardware variant, as known by the original firmware ("sub_model" setting).
+# Accepts the number or the name.
 HARDWARE_VARIANTS = {
-    "legacy": -2,
-    "auto": -1,
+    "0": 0,
     "default": 0,
-    "sub_model_0": 0,
+    "1": 1,
     "hongli": 1,
-    "sub_model_1": 1,
 }
+
+
+def validate_hardware_variant(value):
+    key = str(value).strip().lower()
+    if key not in HARDWARE_VARIANTS:
+        raise cv.Invalid("hardware_variant must be 0 (default) or 1 (hongli)")
+    return HARDWARE_VARIANTS[key]
 
 MIRED_MIN = 153
 MIRED_MAX = 588
@@ -119,7 +122,7 @@ CONFIG_SCHEMA = light.light_schema(
                 cv.Optional(CONF_BLUE, default=DEFAULT_NIGHT_LIGHT_BLUE): cv.float_range(min=0.0, max=1.0),
             }
         ),
-        cv.Optional(CONF_HARDWARE_VARIANT, default="auto"): cv.enum(HARDWARE_VARIANTS, lower=True),
+        cv.Optional(CONF_HARDWARE_VARIANT, default=0): validate_hardware_variant,
         cv.Optional(CONF_ON_BRIGHTNESS): automation.validate_automation(
             {
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(BrightnessTrigger),
