@@ -6,6 +6,7 @@
 #include "../common.h"
 #include "../light_hal.h"
 #include "color_handler.h"
+#include "color_model.h"
 
 namespace esphome {
 namespace xiaomi {
@@ -77,11 +78,28 @@ static const RGBWLevelsTable rgbw_levels_100_ {{
  */
 class ColorHandlerColorTemperature : public ColorHandler {
  public:
+  /**
+   * Use the stock firmware colour model instead of the measured tables.
+   * Pass nullptr to use the measured (legacy) tables.
+   */
+  void set_color_model(const ColorModel *model) { color_model_ = model; }
+
   bool set_light_color_values(light::LightColorValues v) {
     light_mode = LIGHT_MODE_WHITE;
 
     if (v.get_color_mode() != light::ColorMode::COLOR_TEMPERATURE) {
       return false;
+    }
+
+    if (color_model_ != nullptr) {
+      auto duty = color_model_ct(*color_model_, clamp_temperature_(v.get_color_temperature()),
+                                 clamp_brightness_(v.get_brightness()));
+      // The RGB channels are driven inverted (1.0 = off), white is not.
+      red = 1.0f - duty.r;
+      green = 1.0f - duty.g;
+      blue = 1.0f - duty.b;
+      white = duty.w;
+      return true;
     }
 
     auto temperature = clamp_temperature_(v.get_color_temperature());
@@ -99,6 +117,8 @@ class ColorHandlerColorTemperature : public ColorHandler {
   }
 
  protected:
+  const ColorModel *color_model_{nullptr};
+
   float clamp_temperature_(float temperature) {
     if (temperature > MIRED_MAX)
       temperature = MIRED_MAX;

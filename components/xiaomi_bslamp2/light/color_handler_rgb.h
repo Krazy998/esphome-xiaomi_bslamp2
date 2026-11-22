@@ -7,6 +7,7 @@
 #include "../common.h"
 #include "../light_hal.h"
 #include "color_handler.h"
+#include "color_model.h"
 
 namespace esphome {
 namespace xiaomi {
@@ -250,11 +251,27 @@ static const RGBCircle rgb_circle_ {{
  */
 class ColorHandlerRGB : public ColorHandler {
  public:
+  /**
+   * Use the stock firmware colour model instead of the measured tables.
+   * Pass nullptr to use the measured (legacy) tables.
+   */
+  void set_color_model(const ColorModel *model) { color_model_ = model; }
+
   bool set_light_color_values(light::LightColorValues v) {
     light_mode = LIGHT_MODE_RGB;
 
     if (v.get_color_mode() != light::ColorMode::RGB) {
       return false;
+    }
+
+    if (color_model_ != nullptr) {
+      auto duty = color_model_rgb(*color_model_, v.get_red(), v.get_green(), v.get_blue(), v.get_brightness());
+      // The RGB channels are driven inverted (1.0 = off).
+      red = 1.0f - duty.r;
+      green = 1.0f - duty.g;
+      blue = 1.0f - duty.b;
+      white = 0.0f;
+      return true;
     }
 
     // Determine the ring level for the color. This is a value between 0
@@ -340,6 +357,8 @@ class ColorHandlerRGB : public ColorHandler {
   }
 
  protected:
+  const ColorModel *color_model_{nullptr};
+
   /**
    * Returns the position on an RGB ring in degrees (0 - 359).
    */

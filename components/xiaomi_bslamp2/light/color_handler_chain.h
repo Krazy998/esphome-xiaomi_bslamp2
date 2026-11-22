@@ -35,6 +35,11 @@ class ColorHandlerChain : public ColorHandler {
     set_night_light_color_temperature_calibration({red, green, blue});
   }
 
+  void set_color_model(const ColorModel *model) {
+    rgb_light_.set_color_model(model);
+    white_light_.set_color_model(model);
+  }
+
   bool set_light_color_values(light::LightColorValues v) {
     // The actual implementation of the various light modes is in separate
     // targeted classes. These classes are called here in a chain of

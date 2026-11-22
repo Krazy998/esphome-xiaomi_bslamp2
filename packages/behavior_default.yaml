@@ -63,6 +63,7 @@ light:
     id: my_light
     name: ${light_name}
     default_transition_length: ${default_transition_length}
+    hardware_variant: ${hardware_variant}
     night_calibration:
       red: ${night_light_red}
       green: ${night_light_green}

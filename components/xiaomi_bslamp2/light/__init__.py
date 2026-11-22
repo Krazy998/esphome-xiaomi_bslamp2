@@ -31,6 +31,20 @@ CONF_PRESETS = "presets"
 CONF_NEXT = "next"
 CONF_GROUP = "group"
 CONF_NIGHT_CALIBRATION = "night_calibration"
+CONF_HARDWARE_VARIANT = "hardware_variant"
+
+# Colour model selection. "default" and "hongli" are the two hardware variants
+# known by the stock firmware (its "sub_model" setting 0 and 1). "legacy" keeps
+# the measured tables of this component. "auto" reads the stock sub_model from
+# leftover data in flash, falling back to "default".
+HARDWARE_VARIANTS = {
+    "legacy": -2,
+    "auto": -1,
+    "default": 0,
+    "sub_model_0": 0,
+    "hongli": 1,
+    "sub_model_1": 1,
+}
 
 MIRED_MIN = 153
 MIRED_MAX = 588
@@ -105,6 +119,7 @@ CONFIG_SCHEMA = light.light_schema(
                 cv.Optional(CONF_BLUE, default=DEFAULT_NIGHT_LIGHT_BLUE): cv.float_range(min=0.0, max=1.0),
             }
         ),
+        cv.Optional(CONF_HARDWARE_VARIANT, default="auto"): cv.enum(HARDWARE_VARIANTS, lower=True),
         cv.Optional(CONF_ON_BRIGHTNESS): automation.validate_automation(
             {
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(BrightnessTrigger),
@@ -260,6 +275,7 @@ async def light_output_to_code(config):
     await light.register_light(light_output_var, config)
     light_hal_var = await cg.get_variable(config[CONF_LIGHT_HAL_ID])
     cg.add(light_output_var.set_parent(light_hal_var))
+    cg.add(light_output_var.set_hardware_variant(config[CONF_HARDWARE_VARIANT]))
     night_calibration = config[CONF_NIGHT_CALIBRATION]
     cg.add(
         light_output_var.set_night_light_color_temperature_calibration(

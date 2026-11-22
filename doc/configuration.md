@@ -91,6 +91,10 @@ light:
   [below](#light-presets) for detailed information.
 * **on_brightness** (*Optional*, Action): An automation to perform when the brightness of the light
   is modified.
+* **hardware_variant** (*Optional*, string): Which colour model to use for RGB and white light.
+  One of `auto` (default), `default`, `hongli` or `legacy`. See
+  [Hardware variant](#hardware-variant). With the standard packages, set the `hardware_variant`
+  substitution instead.
 * All other options from
   [the base Light implementation](https://esphome.io/components/light/index.html#config-light),
   except for options that handle color correction options like `gamma_correct` and `color_correct`.
@@ -113,6 +117,35 @@ mode. This makes things a lot easier to control.
 It is possible to control the night light mode separately. An example of this can be found in the
 [example.yaml](../example.yaml), in which holding the power button is bound to activating the night
 light.
+
+### Hardware variant
+
+Bedside Lamp 2 units were produced with (at least) two different LED sets. The original firmware
+knows about both, and has separate colour calibration data for each. It does not detect the LEDs
+from the hardware: the variant is a setting called `sub_model` that is stored in the lamp's flash
+(written at the factory / by the Yeelight cloud). The original firmware's log calls variant 1
+"light mixer for hongli". "Hongli" is most likely the LED supplier.
+
+| `hardware_variant` | Meaning |
+|---|---|
+| `default` (or `sub_model_0`) | Stock firmware colour model for `sub_model` 0 |
+| `hongli` (or `sub_model_1`) | Stock firmware colour model for `sub_model` 1 |
+| `auto` | Read `sub_model` from leftover stock firmware data in flash; falls back to `default` |
+| `legacy` | The measured tables that this component used before (matches `default` closely) |
+
+Both models are a re-implementation of the original firmware's colour mixing code. The firmware
+converts RGB to CIE xy and solves for the LED mix with a per-variant matrix, uses a per-variant
+colour temperature table, and compensates for the LED turn-on threshold.
+
+**Finding your variant**
+
+* If you made a backup of the original firmware before flashing, run
+  `python3 tools/read_sub_model.py original-firmware.bin`.
+* Otherwise, try `auto`. The original data may still be present in flash, but ESPHome's own NVS
+  storage overlaps that area, so it might already be gone. The log shows the outcome at boot
+  (`Found stock firmware sub_model=...` or a warning that it fell back to `default`).
+* If neither works: set a warm white (e.g. 2000 K) and compare `default` and `hongli`. On a lamp
+  that needs `hongli`, `default` looks greenish / too cool and yellow looks yellow-green.
 
 ### Night light calibration
 
